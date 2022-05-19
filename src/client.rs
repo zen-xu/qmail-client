@@ -69,6 +69,7 @@ impl<'c> MailBox<'c> {
                 .unwrap(),
             regex: false,
             reserve: false,
+            fetch_body: false,
         }
     }
 }
@@ -80,6 +81,7 @@ pub struct MailFilter<'c> {
     end_datetime: chrono::DateTime<FixedOffset>,
     regex: bool,
     reserve: bool,
+    fetch_body: bool,
 }
 
 impl<'c> MailFilter<'c> {
@@ -98,6 +100,11 @@ impl<'c> MailFilter<'c> {
         self
     }
 
+    pub fn enable_fetch_body(&mut self, enable: bool) -> &mut Self {
+        self.fetch_body = enable;
+        self
+    }
+
     fn done(&self) -> Vec<Mail> {
         let mut session = self.mail_box.client.imap_session.borrow_mut();
         let query = format!(
@@ -107,19 +114,21 @@ impl<'c> MailFilter<'c> {
         );
         let ret = session.search(query);
         let mut mails = vec![];
+        let fetch_query = if self.fetch_body {
+            "(INTERNALDATE BODY[HEADER.FIELDS (SUBJECT FROM)] BODY[TEXT])"
+        } else {
+            "(INTERNALDATE BODY[HEADER.FIELDS (SUBJECT FROM)])"
+        };
+
         if let Ok(uids) = ret {
             for uid in uids.into_iter() {
-                let messages = session
-                    .fetch(
-                        uid.to_string(),
-                        "(INTERNALDATE BODY.PEEK[HEADER.FIELDS (SUBJECT FROM)])",
-                    )
-                    .unwrap();
+                let messages = session.fetch(uid.to_string(), fetch_query).unwrap();
                 let message = if let Some(m) = messages.iter().next() {
                     m
                 } else {
                     continue;
                 };
+
                 let date = message.internal_date().unwrap();
                 // imap only can filter by date, so here we need to filter by time
                 if date.timestamp() < self.start_datetime.timestamp()
@@ -129,15 +138,23 @@ impl<'c> MailFilter<'c> {
                 }
 
                 let header = message.header().unwrap();
-                let parsed = mailparse::parse_mail(header).unwrap();
+                let header_parsed = mailparse::parse_mail(header).unwrap();
+                let body_parsed =
+                    mailparse::parse_mail(message.text().unwrap_or_default()).unwrap();
+
                 let mail = Mail {
                     uid,
-                    subject: parsed
+                    subject: header_parsed
                         .headers
                         .get_first_header("Subject")
                         .unwrap()
                         .get_value(),
-                    from: parsed.headers.get_first_header("From").unwrap().get_value(),
+                    from: header_parsed
+                        .headers
+                        .get_first_header("From")
+                        .unwrap()
+                        .get_value(),
+                    body: body_parsed.subparts[0].get_body().unwrap_or_default(),
                     internal_date: date,
                 };
 
@@ -183,5 +200,6 @@ pub struct Mail {
     pub subject: String,
     pub from: String,
     pub uid: u32,
+    pub body: String,
     pub internal_date: chrono::DateTime<FixedOffset>,
 }
