@@ -1,4 +1,3 @@
-#[allow(clippy::or_fun_call)]
 mod client;
 
 use std::fs;
@@ -58,6 +57,7 @@ enum Commands {
 #[derive(Debug)]
 struct DateTime(chrono::DateTime<FixedOffset>);
 
+#[allow(clippy::or_fun_call)]
 impl FromStr for DateTime {
     type Err = ParseError;
 
