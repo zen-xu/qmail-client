@@ -56,7 +56,7 @@ pub struct MailBox<'c> {
 }
 
 impl<'c> MailBox<'c> {
-    fn filter(
+    pub fn filter(
         &'c self,
         subject_pattern: &str,
         start_datetime: chrono::DateTime<FixedOffset>,
@@ -73,7 +73,7 @@ impl<'c> MailBox<'c> {
         }
     }
 
-    fn download(&self, mail: &Mail) -> Option<HashMap<String, Vec<u8>>> {
+    pub fn download(&self, mail: &Mail) -> Option<HashMap<String, Vec<u8>>> {
         let mut session = self.client.imap_session.borrow_mut();
         let messages = session.fetch(mail.uid.to_string(), "BODY[]").unwrap();
         let message = messages.iter().next().unwrap();
@@ -129,7 +129,7 @@ impl<'c> MailFilter<'c> {
         self
     }
 
-    fn fetch(&self) -> Vec<Mail> {
+    pub fn fetch(&self) -> Vec<Mail> {
         let mut session = self.mail_box.client.imap_session.borrow_mut();
         let query = format!(
             "SINCE {} BEFORE {}",
