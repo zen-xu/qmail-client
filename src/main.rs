@@ -1,6 +1,7 @@
 #[allow(clippy::or_fun_call)]
 mod client;
 
+use std::fs;
 use std::{fmt::Display, str::FromStr};
 
 use chrono::format::{parse, ParseError, Parsed, StrftimeItems};
@@ -8,6 +9,7 @@ use chrono::{Datelike, FixedOffset, NaiveDate, TimeZone};
 use clap::{Parser, Subcommand};
 use owo_colors::OwoColorize;
 use serde::Serialize;
+use serde_json::Value;
 use tabled::{object::Columns, Format, Modify, Table, Tabled};
 
 #[derive(Parser, Debug)]
@@ -15,6 +17,10 @@ use tabled::{object::Columns, Format, Modify, Table, Tabled};
 struct Cli {
     #[clap(subcommand)]
     command: Commands,
+    #[clap(long)]
+    username: Option<String>,
+    #[clap(long)]
+    password: Option<String>,
 }
 
 #[derive(Subcommand, Debug)]
@@ -122,7 +128,19 @@ impl SearchResult {
 
 fn main() {
     let cli = Cli::parse();
-    let client = client::Client::new("xzy@ruitiancapital.com", "KiToJph3o6WsvwWZ").unwrap();
+    let (username, password) = if cli.username.is_none() || cli.password.is_none() {
+        let qmail_passwd = dirs::home_dir().unwrap().join(".qmail_pass");
+        let value: Value =
+            serde_json::from_str(fs::read_to_string(qmail_passwd).unwrap().as_str()).unwrap();
+        (
+            value["username"].as_str().unwrap().to_string(),
+            value["password"].as_str().unwrap().to_string(),
+        )
+    } else {
+        (cli.username.unwrap(), cli.password.unwrap())
+    };
+
+    let client = client::Client::new(&username, &password).unwrap();
     match cli.command {
         Commands::Search {
             subject_query,
