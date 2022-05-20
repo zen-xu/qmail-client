@@ -3,7 +3,8 @@
 use std::{cell::RefCell, fmt::Display};
 
 use chrono::FixedOffset;
-use mailparse::MailHeaderMap;
+use imap_proto::{BodyContentCommon, ContentDisposition};
+use mailparse::{parse_header, MailHeaderMap};
 use native_tls::TlsStream;
 
 const DOMAIN: &str = "imap.exmail.qq.com";
@@ -107,7 +108,8 @@ impl<'c> MailFilter<'c> {
         );
         let ret = session.search(query);
         let mut mails = vec![];
-        let fetch_query = "(INTERNALDATE BODY[HEADER.FIELDS (SUBJECT FROM CC TO)] BODY[TEXT])";
+        let fetch_query =
+            "(INTERNALDATE BODY[HEADER.FIELDS (SUBJECT FROM CC TO)] BODY[TEXT] BODYSTRUCTURE)";
 
         if let Ok(uids) = ret {
             for uid in uids.into_iter() {
@@ -124,6 +126,39 @@ impl<'c> MailFilter<'c> {
                     || date.timestamp() > self.end_datetime.timestamp()
                 {
                     continue;
+                }
+
+                let mut attachments = vec![];
+                let bodystructure = message.bodystructure().unwrap();
+                if let imap_proto::BodyStructure::Multipart {
+                    common: _,
+                    bodies,
+                    extension: _,
+                } = bodystructure
+                {
+                    for body in bodies.iter() {
+                        if let imap_proto::BodyStructure::Basic {
+                            common:
+                                BodyContentCommon {
+                                    ty: _,
+                                    disposition:
+                                        Some(ContentDisposition {
+                                            ty: "attachment",
+                                            params: Some(params),
+                                        }),
+                                    language: _,
+                                    location: _,
+                                },
+                            other: _,
+                            extension: _,
+                        } = body
+                        {
+                            attachments.push(Attachment::new(
+                                params[0].1.to_string(),
+                                params.get(1).map(|v| v.1.parse::<u32>().unwrap()),
+                            ))
+                        }
+                    }
                 }
 
                 let header = message.header().unwrap();
@@ -165,6 +200,7 @@ impl<'c> MailFilter<'c> {
                         .map(|subpart| subpart.get_body().unwrap_or_default())
                         .unwrap_or_default(),
                     internal_date: date,
+                    attachments,
                 };
 
                 if self.regex {
@@ -177,6 +213,8 @@ impl<'c> MailFilter<'c> {
                 } else if !mail.subject.contains(&self.subject_pattern) {
                     continue;
                 }
+
+                println!("{:#?}", bodystructure);
 
                 mails.push(mail);
             }
@@ -218,4 +256,21 @@ pub struct Mail {
     pub uid: u32,
     pub body: String,
     pub internal_date: chrono::DateTime<FixedOffset>,
+    pub attachments: Vec<Attachment>,
+}
+
+#[derive(Debug)]
+pub struct Attachment {
+    pub name: String,
+    pub size: Option<u32>,
+}
+
+impl Attachment {
+    fn new(name: String, size: Option<u32>) -> Self {
+        let name = format!("Subject: {}", name);
+        let (parsed, _) = parse_header(name.as_bytes()).unwrap();
+        let name = parsed.get_value();
+
+        Self { name, size }
+    }
 }
