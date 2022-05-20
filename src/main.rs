@@ -7,6 +7,7 @@ use chrono::format::{parse, ParseError, Parsed, StrftimeItems};
 use chrono::{Datelike, FixedOffset, NaiveDate, TimeZone};
 use clap::{Parser, Subcommand};
 use owo_colors::OwoColorize;
+use serde::Serialize;
 use tabled::{object::Columns, Format, Modify, Table, Tabled};
 
 #[derive(Parser, Debug)]
@@ -42,6 +43,9 @@ enum Commands {
         reserve: bool,
         #[clap(short, long, default_value_t = String::from("INBOX"))]
         mail_box: String,
+
+        #[clap(long)]
+        json: bool,
     },
 }
 
@@ -79,7 +83,7 @@ impl Display for DateTime {
     }
 }
 
-#[derive(Tabled)]
+#[derive(Tabled, Serialize)]
 struct SearchResult {
     #[tabled(rename = "id")]
     id: u32,
@@ -127,6 +131,7 @@ fn main() {
             regex,
             reserve,
             mail_box,
+            json,
         } => {
             let mail_box = client.get(&mail_box).unwrap();
             let mails = mail_box
@@ -139,18 +144,23 @@ fn main() {
                 .into_iter()
                 .map(SearchResult::from_mail)
                 .collect::<Vec<_>>();
-            println!(
-                "{}",
-                Table::new(mails)
-                    .with(
-                        Modify::new(Columns::single(1))
-                            .with(Format::new(|s| s.green().to_string()))
-                    )
-                    .with(
-                        Modify::new(Columns::single(6))
-                            .with(Format::new(|s| s.bright_black().to_string()))
-                    )
-            );
+
+            if json {
+                println!("{}", serde_json::to_string(&mails).unwrap());
+            } else {
+                println!(
+                    "{}",
+                    Table::new(mails)
+                        .with(
+                            Modify::new(Columns::single(1))
+                                .with(Format::new(|s| s.green().to_string()))
+                        )
+                        .with(
+                            Modify::new(Columns::single(6))
+                                .with(Format::new(|s| s.bright_black().to_string()))
+                        )
+                );
+            }
         }
         Commands::Folders => todo!(),
     }
