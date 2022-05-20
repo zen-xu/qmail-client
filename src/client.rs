@@ -214,8 +214,6 @@ impl<'c> MailFilter<'c> {
                     continue;
                 }
 
-                println!("{:#?}", bodystructure);
-
                 mails.push(mail);
             }
         }
