@@ -68,7 +68,7 @@ impl<'c> MailBox<'c> {
                 .parse::<chrono::DateTime<FixedOffset>>()
                 .unwrap(),
             regex: false,
-            reserve: false,
+            reverse: false,
             fetch_body: false,
         }
     }
@@ -80,7 +80,7 @@ pub struct MailFilter<'c> {
     start_datetime: chrono::DateTime<FixedOffset>,
     end_datetime: chrono::DateTime<FixedOffset>,
     regex: bool,
-    reserve: bool,
+    reverse: bool,
     fetch_body: bool,
 }
 
@@ -95,8 +95,8 @@ impl<'c> MailFilter<'c> {
         self
     }
 
-    pub fn reserve(&mut self, reserve: bool) -> &mut Self {
-        self.reserve = reserve;
+    pub fn reverse(&mut self, reserve: bool) -> &mut Self {
+        self.reverse = reserve;
         self
     }
 
@@ -154,7 +154,11 @@ impl<'c> MailFilter<'c> {
                         .get_first_header("From")
                         .unwrap()
                         .get_value(),
-                    body: body_parsed.subparts[0].get_body().unwrap_or_default(),
+                    body: body_parsed
+                        .subparts
+                        .get(0)
+                        .map(|subpart| subpart.get_body().unwrap_or_default())
+                        .unwrap_or_default(),
                     internal_date: date,
                 };
 
@@ -171,6 +175,11 @@ impl<'c> MailFilter<'c> {
 
                 mails.push(mail);
             }
+        }
+
+        mails.sort_by_key(|v| v.internal_date.timestamp());
+        if self.reverse {
+            mails.reverse()
         }
 
         mails
