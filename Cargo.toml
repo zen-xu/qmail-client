@@ -16,3 +16,5 @@ chrono = "0.4"
 regex = "1"
 mailparse = "0.13.8"
 imap-proto = "0.10.2"
+tabled = { version = "*", features = ["color"]}
+owo-colors = "3.4"
