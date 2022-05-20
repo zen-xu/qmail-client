@@ -173,6 +173,28 @@ fn main() {
                             Modify::new(Columns::single(1))
                                 .with(Format::new(|s| s.green().to_string()))
                         )
+                        .with(Modify::new(Columns::single(2)).with(Format::new(|s| {
+                            s.split('\n')
+                                .map(|s| s.yellow().to_string())
+                                .collect::<Vec<_>>()
+                                .join("\n")
+                        })))
+                        .with(Modify::new(Columns::single(3)).with(Format::new(|s| {
+                            s.split('\n')
+                                .map(|s| s.cyan().to_string())
+                                .collect::<Vec<_>>()
+                                .join("\n")
+                        })))
+                        .with(Modify::new(Columns::single(4)).with(Format::new(|s| {
+                            s.split('\n')
+                                .map(|s| s.blue().to_string())
+                                .collect::<Vec<_>>()
+                                .join("\n")
+                        })))
+                        .with(
+                            Modify::new(Columns::single(5))
+                                .with(Format::new(|s| { s.magenta().to_string() }))
+                        )
                         .with(
                             Modify::new(Columns::single(6))
                                 .with(Format::new(|s| s.bright_black().to_string()))
