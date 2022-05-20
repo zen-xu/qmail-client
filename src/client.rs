@@ -99,7 +99,7 @@ impl<'c> MailFilter<'c> {
         self
     }
 
-    fn done(&self) -> Vec<Mail> {
+    fn fetch(&self) -> Vec<Mail> {
         let mut session = self.mail_box.client.imap_session.borrow_mut();
         let query = format!(
             "SINCE {} BEFORE {}",
