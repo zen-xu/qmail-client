@@ -69,7 +69,6 @@ impl<'c> MailBox<'c> {
                 .unwrap(),
             regex: false,
             reverse: false,
-            fetch_body: false,
         }
     }
 }
@@ -81,7 +80,6 @@ pub struct MailFilter<'c> {
     end_datetime: chrono::DateTime<FixedOffset>,
     regex: bool,
     reverse: bool,
-    fetch_body: bool,
 }
 
 impl<'c> MailFilter<'c> {
@@ -100,11 +98,6 @@ impl<'c> MailFilter<'c> {
         self
     }
 
-    pub fn enable_fetch_body(&mut self, enable: bool) -> &mut Self {
-        self.fetch_body = enable;
-        self
-    }
-
     fn done(&self) -> Vec<Mail> {
         let mut session = self.mail_box.client.imap_session.borrow_mut();
         let query = format!(
@@ -114,11 +107,7 @@ impl<'c> MailFilter<'c> {
         );
         let ret = session.search(query);
         let mut mails = vec![];
-        let fetch_query = if self.fetch_body {
-            "(INTERNALDATE BODY[HEADER.FIELDS (SUBJECT FROM CC TO)] BODY[TEXT])"
-        } else {
-            "(INTERNALDATE BODY[HEADER.FIELDS (SUBJECT FROM CC TO)])"
-        };
+        let fetch_query = "(INTERNALDATE BODY[HEADER.FIELDS (SUBJECT FROM CC TO)] BODY[TEXT])";
 
         if let Ok(uids) = ret {
             for uid in uids.into_iter() {
