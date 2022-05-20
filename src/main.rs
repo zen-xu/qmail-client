@@ -6,9 +6,10 @@ use std::{fmt::Display, str::FromStr};
 use chrono::format::{parse, ParseError, Parsed, StrftimeItems};
 use chrono::{Datelike, FixedOffset, NaiveDate, TimeZone};
 use clap::{Parser, Subcommand};
-use owo_colors::OwoColorize;
+use owo_colors::{OwoColorize, Style};
 use serde::Serialize;
 use serde_json::Value;
+use tabled::object::{Object, Rows};
 use tabled::{object::Columns, Format, Modify, Table, Tabled};
 
 #[derive(Parser, Debug)]
@@ -169,34 +170,62 @@ fn main() {
                 println!(
                     "{}",
                     Table::new(mails)
+                        // column headers
+                        .with(Modify::new(Columns::single(1).not(Rows::new(1..))).with(
+                            Format::new(|s| s.green().style(Style::new().bold()).to_string())
+                        ))
+                        .with(Modify::new(Columns::single(2).not(Rows::new(1..))).with(
+                            Format::new(|s| s.yellow().style(Style::new().bold()).to_string())
+                        ))
+                        .with(Modify::new(Columns::single(3).not(Rows::new(1..))).with(
+                            Format::new(|s| s.cyan().style(Style::new().bold()).to_string())
+                        ))
+                        .with(Modify::new(Columns::single(4).not(Rows::new(1..))).with(
+                            Format::new(|s| s.blue().style(Style::new().bold()).to_string())
+                        ))
+                        .with(Modify::new(Columns::single(5).not(Rows::new(1..))).with(
+                            Format::new(|s| s.magenta().style(Style::new().bold()).to_string())
+                        ))
+                        .with(Modify::new(Columns::single(6).not(Rows::new(1..))).with(
+                            Format::new(|s| {
+                                s.bright_black().style(Style::new().bold()).to_string()
+                            })
+                        ))
+                        // rows
                         .with(
-                            Modify::new(Columns::single(1))
+                            Modify::new(Columns::single(1).not(Rows::single(0)))
                                 .with(Format::new(|s| s.green().to_string()))
                         )
-                        .with(Modify::new(Columns::single(2)).with(Format::new(|s| {
-                            s.split('\n')
-                                .map(|s| s.yellow().to_string())
-                                .collect::<Vec<_>>()
-                                .join("\n")
-                        })))
-                        .with(Modify::new(Columns::single(3)).with(Format::new(|s| {
-                            s.split('\n')
-                                .map(|s| s.cyan().to_string())
-                                .collect::<Vec<_>>()
-                                .join("\n")
-                        })))
-                        .with(Modify::new(Columns::single(4)).with(Format::new(|s| {
-                            s.split('\n')
-                                .map(|s| s.blue().to_string())
-                                .collect::<Vec<_>>()
-                                .join("\n")
-                        })))
+                        .with(Modify::new(Columns::single(2).not(Rows::single(0))).with(
+                            Format::new(|s| {
+                                s.split('\n')
+                                    .map(|s| s.yellow().to_string())
+                                    .collect::<Vec<_>>()
+                                    .join("\n")
+                            })
+                        ))
+                        .with(Modify::new(Columns::single(3).not(Rows::single(0))).with(
+                            Format::new(|s| {
+                                s.split('\n')
+                                    .map(|s| s.cyan().to_string())
+                                    .collect::<Vec<_>>()
+                                    .join("\n")
+                            })
+                        ))
+                        .with(Modify::new(Columns::single(4).not(Rows::single(0))).with(
+                            Format::new(|s| {
+                                s.split('\n')
+                                    .map(|s| s.blue().to_string())
+                                    .collect::<Vec<_>>()
+                                    .join("\n")
+                            })
+                        ))
                         .with(
-                            Modify::new(Columns::single(5))
+                            Modify::new(Columns::single(5).not(Rows::single(0)))
                                 .with(Format::new(|s| { s.magenta().to_string() }))
                         )
                         .with(
-                            Modify::new(Columns::single(6))
+                            Modify::new(Columns::single(6).not(Rows::single(0)))
                                 .with(Format::new(|s| s.bright_black().to_string()))
                         )
                 );
