@@ -248,7 +248,7 @@ impl<'c> MailFilter<'c> {
             }
         }
 
-        mails.sort_by_key(|v| v.internal_date.timestamp());
+        mails.sort_by_key(|v| -v.internal_date.timestamp());
         if self.reverse {
             mails.reverse()
         }
