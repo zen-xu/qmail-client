@@ -1,6 +1,6 @@
 #![allow(dead_code)]
 
-use std::{cell::RefCell, fmt::Display};
+use std::{cell::RefCell, collections::HashMap, fmt::Display};
 
 use chrono::FixedOffset;
 use imap_proto::{BodyContentCommon, ContentDisposition};
@@ -71,6 +71,36 @@ impl<'c> MailBox<'c> {
             regex: false,
             reverse: false,
         }
+    }
+
+    fn download(&self, mail: &Mail) -> Option<HashMap<String, Vec<u8>>> {
+        let mut session = self.client.imap_session.borrow_mut();
+        let messages = session.fetch(mail.uid.to_string(), "BODY[]").unwrap();
+        let message = messages.iter().next().unwrap();
+        let body_parsed = mailparse::parse_mail(message.body().unwrap_or_default()).unwrap();
+        let mut mail_data: HashMap<String, Vec<u8>> = mail
+            .attachments
+            .iter()
+            .map(|a| (a.name.clone(), vec![]))
+            .collect();
+
+        for subpart in body_parsed.subparts.iter() {
+            if let Some(content_type) = subpart.get_headers().get_first_value("Content-Type") {
+                let filename = content_type
+                    .split(';')
+                    .nth(1)
+                    .unwrap()
+                    .trim()
+                    .replace('"', "")
+                    .replace("name=", "");
+
+                mail_data
+                    .entry(filename)
+                    .and_modify(|v| *v = subpart.get_body_raw().unwrap());
+            }
+        }
+
+        Some(mail_data)
     }
 }
 
