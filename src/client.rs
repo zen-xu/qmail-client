@@ -115,9 +115,9 @@ impl<'c> MailFilter<'c> {
         let ret = session.search(query);
         let mut mails = vec![];
         let fetch_query = if self.fetch_body {
-            "(INTERNALDATE BODY[HEADER.FIELDS (SUBJECT FROM)] BODY[TEXT])"
+            "(INTERNALDATE BODY[HEADER.FIELDS (SUBJECT FROM CC TO)] BODY[TEXT])"
         } else {
-            "(INTERNALDATE BODY[HEADER.FIELDS (SUBJECT FROM)])"
+            "(INTERNALDATE BODY[HEADER.FIELDS (SUBJECT FROM CC TO)])"
         };
 
         if let Ok(uids) = ret {
@@ -147,13 +147,29 @@ impl<'c> MailFilter<'c> {
                     subject: header_parsed
                         .headers
                         .get_first_header("Subject")
-                        .unwrap()
-                        .get_value(),
+                        .map(|h| h.get_value())
+                        .unwrap_or_default(),
                     from: header_parsed
                         .headers
                         .get_first_header("From")
-                        .unwrap()
-                        .get_value(),
+                        .map(|h| h.get_value())
+                        .unwrap_or_default(),
+                    to: header_parsed
+                        .headers
+                        .get_first_header("To")
+                        .map(|h| h.get_value())
+                        .unwrap_or_default()
+                        .split(',')
+                        .map(|s| s.trim().to_string())
+                        .collect(),
+                    cc: header_parsed
+                        .headers
+                        .get_first_header("CC")
+                        .map(|h| h.get_value())
+                        .unwrap_or_default()
+                        .split(',')
+                        .map(|s| s.trim().to_string())
+                        .collect(),
                     body: body_parsed
                         .subparts
                         .get(0)
@@ -208,6 +224,8 @@ impl Display for MailBox<'_> {
 pub struct Mail {
     pub subject: String,
     pub from: String,
+    pub to: Vec<String>,
+    pub cc: Vec<String>,
     pub uid: u32,
     pub body: String,
     pub internal_date: chrono::DateTime<FixedOffset>,
