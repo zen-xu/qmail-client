@@ -23,7 +23,7 @@ impl Client {
         })
     }
 
-    fn mail_boxes(&self) -> Result<Vec<MailBox>, imap::Error> {
+    pub fn mail_boxes(&self) -> Result<Vec<MailBox>, imap::Error> {
         let mut mail_boxes = vec![];
         let mut session = self.imap_session.borrow_mut();
         for box_name in session.list(None, Some("*")).unwrap().iter() {
@@ -37,7 +37,7 @@ impl Client {
         Ok(mail_boxes)
     }
 
-    fn get(&self, mail_box_name: &str) -> Option<MailBox> {
+    pub fn get(&self, mail_box_name: &str) -> Option<MailBox> {
         let mail_boxes = self.mail_boxes().unwrap();
         for mail_box in mail_boxes {
             if mail_box.name == mail_box_name {
