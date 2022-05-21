@@ -8,9 +8,10 @@ use crossterm::{
 };
 use tui::{
     backend::{Backend, CrosstermBackend},
-    layout::{Constraint, Layout},
+    layout::{Constraint, Direction, Layout, Rect},
     style::{Color, Modifier, Style},
-    widgets::{Block, Borders, Cell, Row, Table, TableState},
+    text::{Span, Spans},
+    widgets::{Block, Borders, Cell, Paragraph, Row, Table, TableState, Wrap},
     Frame, Terminal,
 };
 
@@ -151,9 +152,30 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, mut app: App) -> io::Result<(
     }
 }
 
+fn draw_footer<B: Backend>(f: &mut Frame<B>, area: Rect) {
+    let text = vec![Spans::from(vec![
+        Span::styled("q", Style::default().fg(Color::Yellow)),
+        Span::raw(": quit"),
+        Span::raw("  "),
+        Span::styled("r", Style::default().fg(Color::Yellow)),
+        Span::raw(": refresh"),
+    ])];
+    let block = Block::default()
+        .title(Span::styled(
+            "Help",
+            Style::default()
+                .fg(Color::Magenta)
+                .add_modifier(Modifier::BOLD),
+        ))
+        .borders(Borders::ALL);
+    let paragraph = Paragraph::new(text).block(block).wrap(Wrap { trim: true });
+    f.render_widget(paragraph, area);
+}
+
 fn ui<B: Backend>(f: &mut Frame<B>, app: &mut App) {
     let rects = Layout::default()
-        .constraints([Constraint::Percentage(100)].as_ref())
+        .direction(Direction::Vertical)
+        .constraints([Constraint::Percentage(93), Constraint::Percentage(7)].as_ref())
         .split(f.size());
 
     let selected_style = Style::default().add_modifier(Modifier::REVERSED);
@@ -197,7 +219,14 @@ fn ui<B: Backend>(f: &mut Frame<B>, app: &mut App) {
     });
     let t = Table::new(rows)
         .header(header)
-        .block(Block::default().borders(Borders::ALL).title("Mails"))
+        .block(
+            Block::default().borders(Borders::ALL).title(Span::styled(
+                "Mails",
+                Style::default()
+                    .fg(Color::Magenta)
+                    .add_modifier(Modifier::BOLD),
+            )),
+        )
         .highlight_style(selected_style)
         .highlight_symbol(">> ")
         .widths(&[
@@ -209,5 +238,7 @@ fn ui<B: Backend>(f: &mut Frame<B>, app: &mut App) {
             Constraint::Length(20),
             Constraint::Percentage(20),
         ]);
+
     f.render_stateful_widget(t, rects[0], &mut app.state);
+    draw_footer(f, rects[1]);
 }
