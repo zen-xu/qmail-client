@@ -11,7 +11,7 @@ use tui::{
     layout::{Constraint, Direction, Layout, Rect},
     style::{Color, Modifier, Style},
     text::{Span, Spans},
-    widgets::{Block, Borders, Cell, Paragraph, Row, Table, TableState, Wrap},
+    widgets::{Block, Borders, Cell, Paragraph, Row, Table, TableState},
     Frame, Terminal,
 };
 
@@ -154,28 +154,21 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, mut app: App) -> io::Result<(
 
 fn draw_footer<B: Backend>(f: &mut Frame<B>, area: Rect) {
     let text = vec![Spans::from(vec![
+        Span::raw("  "),
         Span::styled("q", Style::default().fg(Color::Yellow)),
         Span::raw(": quit"),
         Span::raw("  "),
         Span::styled("r", Style::default().fg(Color::Yellow)),
         Span::raw(": refresh"),
     ])];
-    let block = Block::default()
-        .title(Span::styled(
-            "Help",
-            Style::default()
-                .fg(Color::Magenta)
-                .add_modifier(Modifier::BOLD),
-        ))
-        .borders(Borders::ALL);
-    let paragraph = Paragraph::new(text).block(block).wrap(Wrap { trim: true });
+    let paragraph = Paragraph::new(text).style(Style::default().bg(Color::DarkGray));
     f.render_widget(paragraph, area);
 }
 
 fn ui<B: Backend>(f: &mut Frame<B>, app: &mut App) {
     let rects = Layout::default()
         .direction(Direction::Vertical)
-        .constraints([Constraint::Percentage(93), Constraint::Percentage(7)].as_ref())
+        .constraints([Constraint::Min(1), Constraint::Length(1)].as_ref())
         .split(f.size());
 
     let selected_style = Style::default().add_modifier(Modifier::REVERSED);
