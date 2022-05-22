@@ -26,6 +26,8 @@ struct App {
     regex: bool,
     reserve: bool,
     mail_box: String,
+    show_body: bool,
+    body: String,
     mails: Vec<Mail>,
 }
 
@@ -48,6 +50,8 @@ impl App {
             regex,
             reserve,
             mail_box,
+            show_body: false,
+            body: "".to_string(),
             mails: vec![],
         }
     }
@@ -73,6 +77,7 @@ impl App {
             }
             None => 0,
         };
+        self.body = self.mails[i].body.clone();
         self.state.select(Some(i));
     }
 
@@ -87,6 +92,7 @@ impl App {
             }
             None => 0,
         };
+        self.body = self.mails[i].body.clone();
         self.state.select(Some(i));
     }
 }
@@ -143,7 +149,14 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, mut app: App) -> io::Result<(
         if let Event::Key(key) = event::read()? {
             match key.code {
                 KeyCode::Char('q') => return Ok(()),
-                KeyCode::Char('r') => app.refresh(),
+                KeyCode::Char('r') => {
+                    app.refresh();
+                    terminal.clear().unwrap();
+                }
+                KeyCode::Char(' ') => {
+                    app.show_body = !app.show_body;
+                    terminal.clear().unwrap();
+                }
                 KeyCode::Down => app.next(),
                 KeyCode::Up => app.previous(),
                 _ => {}
@@ -152,24 +165,25 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, mut app: App) -> io::Result<(
     }
 }
 
-fn draw_footer<B: Backend>(f: &mut Frame<B>, area: Rect) {
-    let text = vec![Spans::from(vec![
-        Span::raw("  "),
-        Span::styled("q", Style::default().fg(Color::Yellow)),
-        Span::raw(": quit"),
-        Span::raw("  "),
-        Span::styled("r", Style::default().fg(Color::Yellow)),
-        Span::raw(": refresh"),
-    ])];
-    let paragraph = Paragraph::new(text).style(Style::default().bg(Color::DarkGray));
-    f.render_widget(paragraph, area);
-}
-
 fn ui<B: Backend>(f: &mut Frame<B>, app: &mut App) {
-    let rects = Layout::default()
-        .direction(Direction::Vertical)
+    let chunks = Layout::default()
         .constraints([Constraint::Min(1), Constraint::Length(1)].as_ref())
         .split(f.size());
+
+    draw_mail(f, app, chunks[0]);
+    draw_footer(f, chunks[1]);
+}
+
+fn draw_mail<B: Backend>(f: &mut Frame<B>, app: &mut App, area: Rect) {
+    let constraints = if app.show_body {
+        vec![Constraint::Percentage(50), Constraint::Percentage(50)]
+    } else {
+        vec![Constraint::Percentage(100)]
+    };
+    let chunks = Layout::default()
+        .constraints(constraints)
+        .direction(Direction::Horizontal)
+        .split(area);
 
     let selected_style = Style::default().add_modifier(Modifier::REVERSED);
     let normal_style = Style::default().bg(Color::Blue);
@@ -232,6 +246,32 @@ fn ui<B: Backend>(f: &mut Frame<B>, app: &mut App) {
             Constraint::Percentage(20),
         ]);
 
-    f.render_stateful_widget(t, rects[0], &mut app.state);
-    draw_footer(f, rects[1]);
+    f.render_stateful_widget(t, chunks[0], &mut app.state);
+
+    if app.show_body {
+        let block = Block::default().borders(Borders::ALL).title(Span::styled(
+            "Body",
+            Style::default()
+                .fg(Color::Magenta)
+                .add_modifier(Modifier::BOLD),
+        ));
+        let paragraph = Paragraph::new(app.body.clone()).block(block);
+        f.render_widget(paragraph, chunks[1]);
+    }
+}
+
+fn draw_footer<B: Backend>(f: &mut Frame<B>, area: Rect) {
+    let text = vec![Spans::from(vec![
+        Span::raw("  "),
+        Span::styled("q", Style::default().fg(Color::Yellow)),
+        Span::raw(": quit"),
+        Span::raw("  "),
+        Span::styled("r", Style::default().fg(Color::Yellow)),
+        Span::raw(": refresh"),
+        Span::raw("  "),
+        Span::styled("space", Style::default().fg(Color::Yellow)),
+        Span::raw(": show mail body"),
+    ])];
+    let paragraph = Paragraph::new(text).style(Style::default().bg(Color::DarkGray));
+    f.render_widget(paragraph, area);
 }
