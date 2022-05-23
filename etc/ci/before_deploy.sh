@@ -31,10 +31,6 @@ pack() {
         "${gcc_prefix}"strip "$tempdir/$package_name/$PROJECT_NAME"
     fi
 
-    # manpage, readme and license
-    cp README.md "$tempdir/$package_name"
-    cp LICENSE "$tempdir/$package_name"
-
     # archiving
     pushd "$tempdir"
     if [ "$OS_NAME" = windows-latest ]; then
