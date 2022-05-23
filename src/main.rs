@@ -101,6 +101,7 @@ struct SearchResult {
     to: String,
     cc: String,
     date: String,
+    body: String,
     attachments: String,
 }
 
@@ -113,6 +114,7 @@ impl SearchResult {
             to: mail.to.join("\n"),
             cc: mail.cc.join("\n"),
             date: mail.internal_date.to_rfc3339(),
+            body: mail.body,
             attachments: mail
                 .attachments
                 .iter()
