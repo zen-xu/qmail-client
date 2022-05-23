@@ -183,6 +183,17 @@ fn main() {
                 file.write_all(&attachment_data[..]).unwrap();
             }
         }
-        Commands::Boxes => todo!(),
+        Commands::Boxes => {
+            println!(
+                "{}",
+                client
+                    .mail_boxes()
+                    .unwrap_or_default()
+                    .iter()
+                    .map(|b| b.name())
+                    .collect::<Vec<&str>>()
+                    .join("\n")
+            );
+        }
     }
 }
