@@ -16,45 +16,46 @@ use serde_json::Value;
 struct Cli {
     #[clap(subcommand)]
     command: Commands,
-    #[clap(long)]
+    #[clap(long, help = "The username for login [default: from ~/.qmail_pass]")]
     username: Option<String>,
-    #[clap(long)]
+    #[clap(long, help = "The password for login [default: from ~/.qmail_pass]")]
     password: Option<String>,
 }
 
 #[derive(Subcommand, Debug)]
 enum Commands {
-    Folders,
+    #[clap(about = "List boxes")]
+    Boxes,
+    #[clap(about = "Search emails")]
     Search {
         subject_query: String,
 
-        #[clap(long, default_value_t = {
+        #[clap(long, help="Start datetime", default_value_t = {
         let now = chrono::Local::now();
         let start_datetime = NaiveDate::from_ymd(now.year(), now.month(), now.day()).and_hms(0, 0, 0);
         DateTime(now.offset().from_local_datetime(&start_datetime).unwrap())
         })]
         start_datetime: DateTime,
 
-        #[clap(long, default_value_t = {
+        #[clap(long, help="End datetime", default_value_t = {
         let now = chrono::Local::now();
         let start_datetime = NaiveDate::from_ymd(9999, 12, 31).and_hms(0, 0, 0);
         DateTime(now.offset().from_local_datetime(&start_datetime).unwrap())
         })]
         end_datetime: DateTime,
 
-        #[clap(long)]
+        #[clap(long, help = "Search query can be regex")]
         regex: bool,
-        #[clap(long)]
+        #[clap(long, help = "Reverse the order of search result")]
         reserve: bool,
-        #[clap(short, long, default_value_t = String::from("INBOX"))]
+        #[clap(short, long, help = "Specify the mail box", default_value_t = String::from("INBOX"))]
         mail_box: String,
 
-        #[clap(long)]
+        #[clap(long, help = "Format the output as json")]
         json: bool,
     },
-    Download {
-        mail_uid: u32,
-    },
+    #[clap(about = "Download email attachments")]
+    Download { mail_uid: u32 },
 }
 
 #[derive(Debug)]
@@ -182,6 +183,6 @@ fn main() {
                 file.write_all(&attachment_data[..]).unwrap();
             }
         }
-        Commands::Folders => todo!(),
+        Commands::Boxes => todo!(),
     }
 }
