@@ -81,18 +81,17 @@ impl<'c> MailBox<'c> {
         let mut mail_data: HashMap<String, Vec<u8>> = HashMap::new();
 
         for subpart in body_parsed.subparts.iter() {
-            if let Some(content_type) = subpart.get_headers().get_first_value("Content-Type") {
+            if let Some(content_type) = subpart.get_headers().get_first_value("Content-Disposition")
+            {
                 let filename = content_type
                     .split(';')
                     .nth(1)
                     .unwrap()
                     .trim()
                     .replace('"', "")
-                    .replace("name=", "");
+                    .replace("filename=", "");
 
-                mail_data
-                    .entry(filename)
-                    .and_modify(|v| *v = subpart.get_body_raw().unwrap());
+                mail_data.insert(filename, subpart.get_body_raw().unwrap());
             }
         }
 

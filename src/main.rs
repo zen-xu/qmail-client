@@ -1,7 +1,8 @@
 mod client;
 mod search;
 
-use std::fs;
+use std::fs::{self, File};
+use std::io::Write;
 use std::{fmt::Display, str::FromStr};
 
 use chrono::format::{parse, ParseError, Parsed, StrftimeItems};
@@ -50,6 +51,9 @@ enum Commands {
 
         #[clap(long)]
         json: bool,
+    },
+    Download {
+        mail_uid: u32,
     },
 }
 
@@ -167,6 +171,15 @@ fn main() {
                     mail_box,
                 )
                 .unwrap();
+            }
+        }
+        Commands::Download { mail_uid } => {
+            let mail_box = client.get("INBOX").unwrap();
+            let attachments = mail_box.download(mail_uid).unwrap_or_default();
+            for (attachment_name, attachment_data) in attachments {
+                let mut file = File::create(&attachment_name).unwrap();
+                println!("{}", attachment_name);
+                file.write_all(&attachment_data[..]).unwrap();
             }
         }
         Commands::Folders => todo!(),
