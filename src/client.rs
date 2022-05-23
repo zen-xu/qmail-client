@@ -73,6 +73,10 @@ impl<'c> MailBox<'c> {
         }
     }
 
+    pub fn name(&self) -> &str {
+        &self.name
+    }
+
     pub fn download(&self, mail_uid: u32) -> Option<HashMap<String, Vec<u8>>> {
         let mut session = self.client.imap_session.borrow_mut();
         let messages = session.fetch(mail_uid.to_string(), "BODY[]").unwrap();
